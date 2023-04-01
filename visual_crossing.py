@@ -8,7 +8,9 @@
 
 import requests
 import json
+import threading
 import visual_crossing_apikey
+import time
 
 class WeatherData():
     def __init__(self, temp, feelslike, precip, precipprob, snow, snowdepth, preciptype,
@@ -91,6 +93,10 @@ class VisualCrossing():
         self.currentWeatherData = None
         self.dailyWeatherData = []
         self.currentSubWeatherData = dict()
+        self.updateFrequency = 300
+        self.terminateThread = False
+        self.weatherThread = None
+        self.weatherMutex = threading.Lock()
 
     def setLocation(self, name, location):
         self.locationName = name
@@ -214,20 +220,40 @@ class VisualCrossing():
             else:
                 self.processSublocationWeatherData(r.json(), name)
 
+    def pollForWeather(self):
+        while True:
+            print("GETTING WEATHER")
+            self.weatherMutex.acquire()
+            self.getWeatherData()
+            self.weatherMutex.release()
+            time.sleep(self.updateFrequency)
+            if self.terminateThread:
+                break
+
+    def stopPollingForWeather(self):
+        self.terminateThread=True
+        self.weatherThread.join()
+
+    def setPollingPeriod(self,updateFrequency = 300):
+        self.updateFrequency = updateFrequency
+
+    def pollForWeatherWithThread(self):
+        self.weatherThread = threading.Thread(target=self.pollForWeather, args=(), daemon=True)
+        self.weatherThread.start()
+
 # Set-up and test framework for the VisualCrossing API Class
 myvisualcrossing = VisualCrossing(visual_crossing_apikey.myVisualCrossingAPIKey)
 myvisualcrossing.setLocation("Liverpool", "53.39079%2C-2.9055259")
 myvisualcrossing.addSublocations("York", "53.9270239,-1.0741348")
 myvisualcrossing.addSublocations("London", "51.4892971,-0.1132849")
-myvisualcrossing.getWeatherData()
+myvisualcrossing.setPollingPeriod(20)
+myvisualcrossing.pollForWeatherWithThread()
+time.sleep(5)
 
-# Print Stuff Out to Validate
-print("The Extracted Current Weather is: ", end="")
-myvisualcrossing.currentWeatherData.printTemp()
-print("The Extracted Daily Weather is: ")
-for d in myvisualcrossing.dailyWeatherData:
-    d.printTemp(hourly=True)
-print("The Sublocation Weather is: ")
-for name, weather in myvisualcrossing.currentSubWeatherData.items():
-    print("The sublocation weather for " + name + ": ", end="")
-    weather.printTemp()
+while True:
+    # Print Stuff Out to Validate
+    print("The Extracted Current Weather is: ", end="")
+    myvisualcrossing.weatherMutex.acquire()
+    myvisualcrossing.currentWeatherData.printTemp()
+    myvisualcrossing.weatherMutex.release()
+    time.sleep(10)
