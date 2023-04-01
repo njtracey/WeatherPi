@@ -171,3 +171,4 @@ class RpiWeatherHW():
             self.set_raw64(LED8x8ICONS['{0}'.format(digit)], matrix)
             num = int(num / 10)
             matrix -= 1
+

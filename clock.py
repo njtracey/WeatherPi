@@ -58,16 +58,17 @@ def update_display(new_val, old_val):
 #-------------------------------------------------------------------------------
 #  M A I N
 #-------------------------------------------------------------------------------
-display.scroll_text("Hello!    ")
-old_val = 8888
-display.disp_number(old_val)
-display.clock_led_on()
+if __name__ == "__main__":
+    display.scroll_text("Hello!    ")
+    old_val = 8888
+    display.disp_number(old_val)
+    display.clock_led_on()
 
-while True:
-    """Loop forever, updating every 2 seconds."""
-    new_val = time2int(time.localtime(),True)
-    print(f"The time is: {new_val}, the old time was {old_val}")
-    update_display(new_val, old_val)
-    display.clock_led_toggle()
-    old_val = new_val
-    time.sleep(2)
+    while True:
+        # Loop forever, updating every 2 seconds.
+        new_val = time2int(time.localtime(),True)
+        print(f"The time is: {new_val}, the old time was {old_val}")
+        update_display(new_val, old_val)
+        display.clock_led_toggle()
+        old_val = new_val
+        time.sleep(2)

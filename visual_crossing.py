@@ -242,18 +242,19 @@ class VisualCrossing():
         self.weatherThread.start()
 
 # Set-up and test framework for the VisualCrossing API Class
-myvisualcrossing = VisualCrossing(visual_crossing_apikey.myVisualCrossingAPIKey)
-myvisualcrossing.setLocation("Liverpool", "53.39079%2C-2.9055259")
-myvisualcrossing.addSublocations("York", "53.9270239,-1.0741348")
-myvisualcrossing.addSublocations("London", "51.4892971,-0.1132849")
-myvisualcrossing.setPollingPeriod(20)
-myvisualcrossing.pollForWeatherWithThread()
-time.sleep(5)
+if __name__ == "__main__":
+    myvisualcrossing = VisualCrossing(visual_crossing_apikey.myVisualCrossingAPIKey)
+    myvisualcrossing.setLocation("Liverpool", "53.39079%2C-2.9055259")
+    myvisualcrossing.addSublocations("York", "53.9270239,-1.0741348")
+    myvisualcrossing.addSublocations("London", "51.4892971,-0.1132849")
+    myvisualcrossing.setPollingPeriod(20)
+    myvisualcrossing.pollForWeatherWithThread()
+    time.sleep(5)
 
-while True:
-    # Print Stuff Out to Validate
-    print("The Extracted Current Weather is: ", end="")
-    myvisualcrossing.weatherMutex.acquire()
-    myvisualcrossing.currentWeatherData.printTemp()
-    myvisualcrossing.weatherMutex.release()
-    time.sleep(10)
+    while True:
+        # Print Stuff Out to Validate
+        print("The Extracted Current Weather is: ", end="")
+        myvisualcrossing.weatherMutex.acquire()
+        myvisualcrossing.currentWeatherData.printTemp()
+        myvisualcrossing.weatherMutex.release()
+        time.sleep(10)
