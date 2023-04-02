@@ -59,7 +59,10 @@ def update_display(new_val, old_val):
 #  M A I N
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
-    display.scroll_text("Hello!    ")
+    display.threadedScrollText("Hello!    ")
+    time.sleep(1)
+    #display.interruptDisplayAction()
+    display.threadedScrollTextWait()
     old_val = 8888
     display.disp_number(old_val)
     display.clock_led_on()

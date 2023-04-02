@@ -9,6 +9,7 @@ from time import sleep
 from gpiozero import LED
 import board
 import busio
+import threading
 
 from adafruit_ht16k33 import matrix
 from led8x8icons import LED8x8ICONS
@@ -45,12 +46,16 @@ class RpiWeatherHW():
         for m in RpiWeatherHW.matrix:
             m.auto_write = False
 
+        RpiWeatherHW.interruptHWAction = False
+        RpiWeatherHW.displayUpdateThread = None
+
     def hw_off(self):
         for led in RpiWeatherHW.leds:
             led.off()
         for m in RpiWeatherHW.matrix:
             m.fill(0)
             m.show()
+            
     def clock_led_toggle(self):
         if RpiWeatherHW.clock_leds:
            RpiWeatherHW.leds[0].off()
@@ -80,10 +85,12 @@ class RpiWeatherHW():
         if matrix == None:
             for m in RpiWeatherHW.matrix:
                 m.fill(0)
+                m.show()
         else:
             if not self.is_valid_matrix(matrix):
                 return
             RpiWeatherHW.matrix[matrix].fill(0)
+            RpiWeatherHW.matrix[matrix].show()
             
     def set_pixel(self, x, y, matrix=0, value=1):
         """Set pixel at position x, y for specified matrix to the given value."""
@@ -126,11 +133,37 @@ class RpiWeatherHW():
             RpiWeatherHW.matrix[matrix].show()
             sleep(delay)
 
+    def interruptDisplayAction(self):
+        # Set the flag to indicate that scrolling should be interrupted
+        RpiWeatherHW.interruptHWAction = True
+
+    def threadedScrollText(self, text_message, delay=0.03):
+        # Indicate that we shouldn't interrupt the threaded operation
+        RpiWeathHW.interruptHWAction = False
+        # Create and start the thread to do the scrolling
+        RpiWeatherHW.displayUpdateThread = threading.Thread(
+                target=self.scroll_text,
+                args=(text_message, delay),
+                daemon=True)
+        RpiWeatherHW.displayUpdateThread.start()
+
+    def threadedScrollTextWait(self):
+        # Wait for the thread to terminate
+        RpiWeatherHW.displayUpdateThread.join()
+        RpiWeatherHW.displayUpdateThread = None
+
     def scroll_text(self, text_message, delay=0.03):
         bitmap = [[0 for x in range(8)] for y in range(8)]
 
         """Scroll a text message across all four displays"""
         for character in text_message:
+
+            # Check if we should terminate the scrolling
+            if RpiWeatherHW.interruptHWAction:
+                # Reset the flag so it doesn't interrupt next time
+                RpiWeatherHW.interruptHWAction = False
+                return
+
             """ Construct the bitmap """
             value = LED8x8ICONS['{0}'.format(character)]
             for y in range(8):
