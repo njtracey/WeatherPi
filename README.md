@@ -12,9 +12,11 @@ Look at the file rpi-weather.fzz for the wiring diagram.
 A brief description of the various software components.
 * ```rpi_weather_hw.py``` - defines a class for interfacing with the hardware
 * ```led8x8icons.py``` - contains a dictionary of icons
-* ```clock.py``` - displays the time, for use as a clock as a test app for the displays and HW
+* ```clock_test.py``` - displays the time, for use as a clock as a test app for the displays and HW
+* ```clock.py``` - contains a class for managing the clock mode of the weather station functionality
+* ```weather.py``` - the main application contianing the state-machine to drive the modes of the weather station
 * ```visual_crossing.py``` - interfaces the VisualCrossing Web API to download weather data
-* ```visual_crossing_apikey.py``` - put your VisualCrossing API key here... myVisualCrossingAPIKey=<Your Key Here>
+* ```visual_crossing_apikey.py``` - put your VisualCrossing API key here... myVisualCrossingAPIKey=\<Your Key Here\>
 
 # Dependencies
 *  Adafruit Python Library for LED Backpacks
