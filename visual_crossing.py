@@ -14,8 +14,8 @@ import time
 
 class WeatherData():
     def __init__(self, temp, feelslike, precip, precipprob, snow, snowdepth, preciptype,
-            windspeed, windgust, winddir, cloudcover, uvindex, conditions, icon,
-            sunrise=None, sunset=None, hourly=[]):
+            windspeed, windgust, winddir, cloudcover, uvindex, conditions, icon, description="",
+            sunrise="", sunset="", hourly=[]):
         self.temp = temp
         self.feelslike = feelslike
         self.precip = precip
@@ -29,6 +29,7 @@ class WeatherData():
         self.cloudcover = cloudcover
         self.uvindex = uvindex
         self.conditions = conditions
+        self.description = description
         self.icon = icon
         self.sunrise = sunrise
         self.sunset = sunset
@@ -49,6 +50,7 @@ class WeatherData():
             "Cloud Cov = " + str(self.cloudcover) + "\n" \
             "UV Index =  " + str(self.uvindex) + "\n" \
             "Conditions =" + str(self.conditions) + "\n" \
+            "Description=" + str(self.description) + "\n" \
             "Icon =      " + str(self.icon) + "\n" \
             "Sun Rise =  " + str(self.sunrise) + "\n" \
             "Sunset =    " + str(self.sunset) + "\n"
@@ -82,7 +84,7 @@ class VisualCrossing():
     BASE_URL = "https://weather.visualcrossing.com"
     REQUEST_DETAILS1 = "/VisualCrossingWebServices/rest/services/timeline/"
     REQUEST_DETAILS2 = "/next4days?include=hours%2Ccurrent%2Cdays&key="
-    REQUEST_DETAILS3 = "&unitGroup=uk&contentType=json"
+    REQUEST_DETAILS3 = "&unitGroup=uk&iconSet=icons2&contentType=json"
     REQUEST_DETAILS4 = "/today?include=current&key="
 
     def __init__(self, apikey):
@@ -168,6 +170,7 @@ class VisualCrossing():
                 day["uvindex"],
                 day["conditions"],
                 day["icon"],
+                description = day["description"],
                 sunrise = day["sunrise"],
                 sunset = day["sunset"],
                 hourly = hourlyWeatherData
@@ -192,37 +195,32 @@ class VisualCrossing():
                 currentWeather["uvindex"],
                 currentWeather["conditions"],
                 currentWeather["icon"],
-                currentWeather["sunrise"],
-                currentWeather["sunset"]
+                sunrise = currentWeather["sunrise"],
+                sunset = currentWeather["sunset"]
                 )
 
     def getWeatherData(self):
         REQUEST_URL = VisualCrossing.BASE_URL
 
         REQUEST = VisualCrossing.REQUEST_DETAILS1 + self.locationLatLong + VisualCrossing.REQUEST_DETAILS2 + self.apikey + VisualCrossing.REQUEST_DETAILS3
-        print("Getting Weather for " + self.locationName + ": ")
         try:
-            print("   " + REQUEST)
             r = requests.get(REQUEST_URL + REQUEST)
         except:
-            print("Error")
+            print("Error   " + REQUEST)
         else:
             self.processWeatherData(r.json())
 
         for name, latlong in self.subLocations.items():
             REQUEST = VisualCrossing.REQUEST_DETAILS1 + latlong + VisualCrossing.REQUEST_DETAILS4 + self.apikey + VisualCrossing.REQUEST_DETAILS3
-            print("Getting Current Weather Conditions for " + name + ": ")
             try:
-                print("   " + REQUEST)
                 r = requests.get(REQUEST_URL + REQUEST)
             except:
-                print("Error")
+                print("Error   " + REQUEST)
             else:
                 self.processSublocationWeatherData(r.json(), name)
 
     def pollForWeather(self):
         while True:
-            print("GETTING WEATHER")
             self.weatherMutex.acquire()
             self.getWeatherData()
             self.weatherMutex.release()
@@ -244,7 +242,7 @@ class VisualCrossing():
 # Set-up and test framework for the VisualCrossing API Class
 if __name__ == "__main__":
     myvisualcrossing = VisualCrossing(visual_crossing_apikey.myVisualCrossingAPIKey)
-    myvisualcrossing.setLocation("Liverpool", "53.39079%2C-2.9055259")
+    myvisualcrossing.setLocation("Liverpool", "53.39079,-2.9055259")
     myvisualcrossing.addSublocations("York", "53.9270239,-1.0741348")
     myvisualcrossing.addSublocations("London", "51.4892971,-0.1132849")
     myvisualcrossing.setPollingPeriod(20)

@@ -1,42 +1,5 @@
 #===============================================================================
 # led8x8icons.py
-#
-# Dictionary of LED 8x8 matrix icons as 64 bit values.
-#
-# Code snippet for computing value from bitmap:
-#
-#           BITMAP = [
-#           [1, 1, 1, 1, 1, 1, 1, 1,],
-#           [1, 1, 0, 0, 0, 0, 0, 1,],
-#           [1, 0, 1, 0, 0, 0, 0, 1,],
-#           [1, 0, 0, 1, 0, 0, 0, 1,],
-#           [1, 0, 0, 0, 1, 0, 0, 1,],
-#           [1, 0, 0, 0, 0, 1, 0, 1,],
-#           [1, 0, 0, 0, 0, 0, 1, 1,],
-#           [1, 0, 0, 0, 0, 0, 0, 1,],
-#           ]
-#           value = 0
-#           for y,row in enumerate(BITMAP):
-#               row_byte = 0
-#               for x,bit in enumerate(row):
-#                   row_byte += bit<<x    
-#               value += row_byte<<(8*y)
-#           print '0x'+format(value,'02x')
-#
-# Code snippet for setting individual LEDs on the display.
-#
-#        def set_raw64(value):
-#            led8x8matrix.clear()
-#            for y in xrange(8):
-#                row_byte = value>>(8*y)
-#                for x in xrange(8):
-#                    pixel_bit = row_byte>>x&1 
-#                    led8x8matrix.set_pixel(x,y,pixel_bit) 
-#            led8x8mmatrix.write_display() 
-#
-# 2014-10-20
-# Carter Nelson
-#==============================================================================
 LED8x8ICONS = {
 #---------------------------------------------------------
 # default
@@ -55,6 +18,7 @@ LED8x8ICONS = {
 'BOX'                               : 0xff818181818181ff ,
 'XBOX'                              : 0xffc3a59999a5c3ff ,
 '§'                                 : 0x3c4299858599423c ,
+'£'                                 : 0x0000000006090906 ,
 #---------------------------------------------------------
 # weather
 #---------------------------------------------------------
@@ -64,6 +28,24 @@ LED8x8ICONS = {
 'SHOWERS'                           : 0x152a7e818191710e ,
 'SNOW'                              : 0xa542a51818a542a5 ,
 'STORM'                             : 0x0a04087e8191710e ,
+
+'snow'                              : 0xa542a51818a542a5 ,
+'snow-showers-day'                  : 0xa542a51818a542a5 ,
+'snow-showers-night'                : 0xa542a51818a542a5 ,
+'thunder-rain'                      : 0x55aa55aa55aa55aa ,
+'thunder-showers-day'               : 0x55aa55aa55aa55aa ,
+'thunder-showers-night'             : 0x55aa55aa55aa55aa ,
+'rain'                              : 0x152a7e818191710e ,
+'showers'                           : 0x152a7e818191710e ,
+'showers-day'                       : 0x152a7e818191710e ,
+'showers-night'                     : 0x152a7e818191710e ,
+'fog'                               : 0x55aa55aa55aa55aa ,
+'wind'                              : 0xffc3a59999a5c3ff ,
+'cloudy'                            : 0x00007e818999710e ,
+'partly-cloudy-day'                : 0x00007e818999710e ,
+'partly-cloudy-night'              : 0x00007e818999710e ,
+'clear-day'                         : 0x9142183dbc184289 ,
+'clear-night'                       : 0x9142183dbc184289 ,
 #---------------------------------------------------------
 # characters
 #---------------------------------------------------------

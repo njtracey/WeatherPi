@@ -10,14 +10,15 @@ from gpiozero import LED
 import board
 import busio
 import threading
-
 from adafruit_ht16k33 import matrix
-from led8x8icons import LED8x8ICONS
+
+import state
+from led8x8icons import LED8x8ICONS as ICONS
 
 class RpiWeatherHW():
 
     # Hardware interface variables
-    leds = [LED(17), LED(27), LED(9), LED(22), LED(10), LED(18), LED(14), LED(15)]
+    leds = [LED(17), LED(27), LED(22), LED(10), LED(9), LED(14), LED(15), LED(18)]
 
     # State of Clock LEDs - True=On; False=Off
     clock_leds = False
@@ -46,7 +47,7 @@ class RpiWeatherHW():
         for m in RpiWeatherHW.matrix:
             m.auto_write = False
 
-        RpiWeatherHW.interruptHWAction = False
+        state.interruptAction = False
         RpiWeatherHW.displayUpdateThread = None
 
     def hw_off(self):
@@ -75,6 +76,22 @@ class RpiWeatherHW():
        RpiWeatherHW.leds[0].off()
        RpiWeatherHW.leds[1].off()
        RpiWeatherHW.clock_leds = False
+
+    def all_led_on(self):
+        for l in RpiWeatherHW.leds:
+            l.on()
+
+    def all_led_off(self):
+        for l in RpiWeatherHW.leds:
+            l.off()
+
+    def led_on(self, ledNumber):
+        if 0 <= ledNumber < len(RpiWeatherHW.leds): 
+            RpiWeatherHW.leds[ledNumber].on()
+
+    def led_off(self, ledNumber):
+        if 0 <= ledNumber < len(RpiWeatherHW.leds): 
+            RpiWeatherHW.leds[ledNumber].off()
    
     def is_valid_matrix(self, matrix):
         """Returns True if matrix number is valid, otherwise False."""
@@ -133,13 +150,28 @@ class RpiWeatherHW():
             RpiWeatherHW.matrix[matrix].show()
             sleep(delay)
 
+    def displayText(self, text):
+        if len(text) > 4:
+            displayText = text[:4]
+        else:
+            displayText = text
+
+        for i, c in enumerate(displayText):
+            self.set_raw64(ICONS[c], matrix=i)
+
+    def displayIcons(self, icon0, icon1, icon2, icon3):
+        self.set_raw64(ICONS[icon0], 0)
+        self.set_raw64(ICONS[icon1], 1)
+        self.set_raw64(ICONS[icon2], 2)
+        self.set_raw64(ICONS[icon3], 3)
+
     def interruptDisplayAction(self):
         # Set the flag to indicate that scrolling should be interrupted
-        RpiWeatherHW.interruptHWAction = True
+        state.interruptAction = True
 
     def threadedScrollText(self, text_message, delay=0.03):
         # Indicate that we shouldn't interrupt the threaded operation
-        RpiWeatherHW.interruptHWAction = False
+        state.interruptAction = False
         # Create and start the thread to do the scrolling
         RpiWeatherHW.displayUpdateThread = threading.Thread(
                 target=self.scrollText,
@@ -159,13 +191,13 @@ class RpiWeatherHW():
         for character in text_message:
 
             # Check if we should terminate the scrolling
-            if RpiWeatherHW.interruptHWAction:
+            if state.interruptAction:
                 # Reset the flag so it doesn't interrupt next time
-                RpiWeatherHW.interruptHWAction = False
+                state.interruptAction = False
                 return
 
             """ Construct the bitmap """
-            value = LED8x8ICONS['{0}'.format(character)]
+            value = ICONS['{0}'.format(character)]
             for y in range(8):
                 row_byte = value >> (8*y)
                 for x in range(8):
@@ -201,7 +233,7 @@ class RpiWeatherHW():
         matrix = 3
         while num:
             digit = num % 10
-            self.set_raw64(LED8x8ICONS['{0}'.format(digit)], matrix)
+            self.set_raw64(ICONS['{0}'.format(digit)], matrix)
             num = int(num / 10)
             matrix -= 1
 
