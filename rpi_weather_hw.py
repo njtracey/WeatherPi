@@ -139,10 +139,10 @@ class RpiWeatherHW():
 
     def threadedScrollText(self, text_message, delay=0.03):
         # Indicate that we shouldn't interrupt the threaded operation
-        RpiWeathHW.interruptHWAction = False
+        RpiWeatherHW.interruptHWAction = False
         # Create and start the thread to do the scrolling
         RpiWeatherHW.displayUpdateThread = threading.Thread(
-                target=self.scroll_text,
+                target=self.scrollText,
                 args=(text_message, delay),
                 daemon=True)
         RpiWeatherHW.displayUpdateThread.start()
@@ -152,7 +152,7 @@ class RpiWeatherHW():
         RpiWeatherHW.displayUpdateThread.join()
         RpiWeatherHW.displayUpdateThread = None
 
-    def scroll_text(self, text_message, delay=0.03):
+    def scrollText(self, text_message, delay=0.03):
         bitmap = [[0 for x in range(8)] for y in range(8)]
 
         """Scroll a text message across all four displays"""

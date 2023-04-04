@@ -3,7 +3,7 @@
 import time
 import signal
 
-import Constants
+import constants
 from rpi_weather_hw import RpiWeatherHW
 from led8x8icons import LED8x8ICONS as ICONS
 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, termination_clean_up)
 
     # Display Start-Up Behaviour
-    display.scrollText(Constants.weatherVer + Constants.weatherCopyright, delay=0.015)
+    display.scrollText(constants.weatherVer + constants.weatherCopyright, delay=0.015)
     time.sleep(1)
 
 
