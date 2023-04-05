@@ -1,7 +1,5 @@
-weatherVer = "RPIWeather v0.1    "
-weatherCopyright = "§ GrumpyFerret    "
-#weatherVer = "1"
-#weatherCopyright = "§"
+weatherVer = "RPIWeather v2.0    "
+weatherCopyright = "§ GrumpyFerret 2023    "
 
 interruptAction = False
 

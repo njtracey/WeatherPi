@@ -3,11 +3,14 @@
 # System Imports
 import time
 import signal
+import datetime
 
 # Project Imports
 import state
 import visual_crossing_apikey
 import clock
+import weather_modes
+import rubbish
 from visual_crossing import VisualCrossing
 from rpi_weather_hw import RpiWeatherHW
 from led8x8icons import LED8x8ICONS as ICONS
@@ -16,19 +19,70 @@ from led8x8icons import LED8x8ICONS as ICONS
 display: RpiWeatherHW
 # Mode classes
 clock : clock.Clock
+weather : weather_modes.WeatherDisplay
 
 # Weather API class
 theWeather : VisualCrossing
 
 # Mode Statemachine Variables
 mainMode = 0
-maxMode = 3
-modeTime = [10, 10, 30, 10]
+oldMainMode = 0
+maxMode = 5
+modeTime = [10, 10, 9, 10, 10, 10]
 cycleModes = True
 firstClock = True
 
+def extractWeatherForecastText(theWeather,short=False,subLocationName=""):
+    
+    # Get the Mutex to avoid corrupting the weather state
+    theWeather.weatherMutex.acquire()
+    if short:
+        todaysDescription = theWeather.currentSubWeatherData[subLocationName].conditions
+        todaysTemp = theWeather.currentSubWeatherData[subLocationName].temp
+        todaysTempFeelsLike = theWeather.currentSubWeatherData[subLocationName].feelslike
+    else:
+        todayDescription = theWeather.dailyWeatherData[0].description
+        todayTempMin = theWeather.dailyWeatherData[0].tempmin
+        todayTempMax = theWeather.dailyWeatherData[0].tempmax
+        todayTempFeelsLike = theWeather.dailyWeatherData[0].feelslike
+        todayPrecip = theWeather.dailyWeatherData[0].precip
+        todayPrecipType = theWeather.dailyWeatherData[0].preciptype
+        todayPrecipProb = theWeather.dailyWeatherData[0].precipprob
+    theWeather.weatherMutex.release()
+
+    if short:
+        forecastString = "Today in " + subLocationName + " it is " + str(todaysDescription)
+        forecastString = forecastString + ". With a temperature of " + str(todaysTemp) + "£" + \
+                " and feeling like " + str(todaysTempFeelsLike) + "£.    "
+    else:
+        forecastString = "Today the weather will be " + todayDescription
+        forecastString = forecastString + " The high will be " + str(todayTempMax) + "£" + \
+            " and the low will be " + str(todayTempMin) + "£."
+        forecastString = forecastString + " There is a " + str(todayPrecipProb) + "% chance of"
+        precipTypeNum = 0
+        for p in todayPrecipType:
+            if p == 'rain':
+                if precipTypeNum != 0:
+                    forecastString = forecastString + " &"
+                    forecastString = forecastString + " rain"
+                    precipTypeNum += 1
+            if p == 'snow':
+                if precipTypeNum != 0:
+                    forecastString = forecastString + " &"
+                    forecastString = forecastString + " snow"
+                    precipTypeNum += 1
+
+        if precipTypeNum == 0:
+            forecastString = forecastString + " rain"
+
+        forecastString = forecastString + " with a depth of " + str(todayPrecip) + "mm."
+        forecastString = forecastString + "    "
+
+    return forecastString
+
 def mainWeatherStationEventLoop():
     global mainMode
+    global oldMainMode
     global maxMode
     global modeTime
     global cycleModes
@@ -38,113 +92,207 @@ def mainWeatherStationEventLoop():
     global display
 
     while True:
+        # Main state machine for weather station, driving the modal behaviour
+        # Mode 0: Clock
+        # Mode 1: Current Temperature
+        # Mode 2: Today's Precipitation
+        # Mode 3: Next Four Hours
+        # Mode 4: New Four Days
+        # Mode 5: Bin Recycling
+
         # Clock Mode
         if mainMode == 0:
             print("Entering Clock Mode...")
+
+            # Turn off the Rubbish Mode led
+            display.led_off(7)
+
+            display.clear_disp()
+            clock.turnOnClockLEDs()
+
+            state.interruptAction = False
             clock.threadedDisplayClock(firstClock)
             firstClock = False
 
             # If cycling modes then switch out of mode after delay, otherwise stay in mode
             if cycleModes:
-                time.sleep(modeTime[mainMode])
-                # We want to move out of this mode, so terminate the clock mode thread
-                state.interruptAction = True
-                clock.threadedDisplayClockWait()
+                # Cycling mode, so stay in this mode until modeTime expires unless interrupted
+                for i in range(modeTime[mainMode]*10):
+                    if state.interruptAction:
+                        break
+                    time.sleep(0.1)
 
-                # Move to next mode
-                if mainMode == maxMode:
-                    # Return to the mainMode 0 to cycle back through
-                    mainMode = 0
+                if state.interruptAction == False:
+                    # We want to move out of this mode, so terminate the clock mode thread
+                    state.interruptAction = True
+                    clock.threadedDisplayClockWait()
+                    state.interruptAction = False
+
+                    # Move to next mode
+                    if mainMode >= maxMode:
+                        # Return to the mainMode 0 to cycle back through
+                        mainMode = 0
+                    else:
+                        mainMode += 1
                 else:
-                    mainMode += 1
+                    clock.threadedDisplayClockWait()
+                    state.interruptAction = False
             else:
                 while True:
-                    time.sleep(1)
-
-            clock.turnOffClockLEDs()
+                    if state.interruptAction:
+                        clock.threadedDisplayClockWait()
+                        state.interruptAction = False
+                        break
+                    time.sleep(0.1)
 
         # Display Current Temperature
         elif mainMode == 1:
-            print("Entering Current Weather Mode...")
+            print("Entering Current Temperature Mode...")
 
+            # Turn off the Clock Mode leds
+            clock.turnOffClockLEDs()
             # Turn on the Current Temperature Mode led
             display.led_on(3)
 
-            # Get the Mutex to avoid corrupting the weather state
-            theWeather.weatherMutex.acquire()
-            temperature = theWeather.currentWeatherData.temp
-            theWeather.weatherMutex.release()
-
-            tempFloat = float(temperature)
-            if tempFloat < 10.0:
-                tempStr = str(tempFloat)[:3]
-            else:
-                tempStr = str(round(tempFloat))
-
-            # Construct the temperature string
-            curTempStr = ""
-            if tempFloat < 0:
-                curTempStr + "-"
-            curTempStr = f"{curTempStr}{tempStr}£"
-            print(curTempStr)
-            display.displayText(curTempStr)
+            weather.threadedDisplayTemperature()
 
             if cycleModes:
-                time.sleep(modeTime[mainMode])
-                if mainMode == maxMode:
-                    # Return to the mainMode 0 to cycle back through
-                    mainMode = 0
+                # Cycling mode, so stay in this mode until modeTime expires unless interrupted
+                for i in range(modeTime[mainMode]*10):
+                    if state.interruptAction:
+                        break
+                    time.sleep(0.1)
+
+                if state.interruptAction == False:
+                    # We want to move out of this mode, so terminate the weather mode thread
+                    state.interruptAction = True
+                    weather.threadedDisplayTemperatureWait()
+                    state.interruptAction = False
+
+                    #Move to next mode
+                    if mainMode >= maxMode:
+                        # Return to the mainMode 0 to cycle back through
+                        mainMode = 0
+                    else:
+                        mainMode += 1
                 else:
-                    mainMode += 1
+                    weather.threadedDisplayTemperatureWait()
+                    state.interruptAction = False
             else:
                 while True:
-                    time.sleep(1)
+                    if state.interruptAction:
+                        weather.threadedDisplayTemperatureWait()
+                        state.interruptAction = False
+                        break
+                    time.sleep(0.1)
+
+        # Display Today's Rain Fall 
+        elif mainMode == 2:
+            print("Entering Current Precipitation Mode...")
 
             # Turn off the Current Temperature Mode led
             display.led_off(3)
-
-        # Display Today's Forecast Text
-        elif mainMode == 2:
-            print("Entering Today Forecast Weather Mode...")
-
-            # Turn on the Current Temperature Mode led
-            display.led_on(4)
+            # Turn on the Precipitation Mode led
             display.clear_disp()
-            
-            # Get the Mutex to avoid corrupting the weather state
-            theWeather.weatherMutex.acquire()
-            forecastDescription = theWeather.dailyWeatherData[0].description
-            theWeather.weatherMutex.release()
+            display.led_on(4)
 
-            print("Today's forecast... " + forecastDescription)
-            display.threadedScrollText("Today's forecast... " + forecastDescription)
+            weather.threadedDisplayPrecipitation()
 
             if cycleModes:
-                time.sleep(modeTime[mainMode])
-                # We want to move out of this mode, so terminate the today's forecast mode thread
-                state.interruptAction = True
-                display.threadedScrollTextWait()
+                # Cycling mode, so stay in this mode until modeTime expires unless interrupted
+                for i in range(modeTime[mainMode]*10):
+                    if state.interruptAction:
+                        break
+                    time.sleep(0.1)
 
-                if mainMode == maxMode:
-                    # Return to the mainMode 0 to cycle back through
-                    mainMode = 0
+                if state.interruptAction == False:
+                    # We want to move out of this mode, so terminate the weather mode thread
+                    state.interruptAction = True
+                    weather.threadedDisplayPrecipitationWait()
+                    state.interruptAction = False
+
+                    # Move to next mode
+                    if mainMode >= maxMode:
+                        # Return to the mainMode 0 to cycle back through
+                        mainMode = 0
+                    else:
+                        mainMode += 1
                 else:
-                    mainMode += 1
+                    weather.threadedDisplayPrecipitationWait()
+                    state.interruptAction = False
             else:
                 while True:
-                    time.sleep(1)
-                    
-            # Turn on the Current Temperature Mode led
-            display.led_off(4)
+                    if state.interruptAction:
+                        weather.threadedDisplayPrecipitationWait()
+                        state.interruptAction = False
+                        break
+                    time.sleep(0.1)
 
-        # Display Next Four Days as Icons 
+        # Display Next Four Hours as Icons 
         elif mainMode == 3:
-            print("Entering Four Day Forecast Weather Mode...")
+            print("Entering Four Hour Forecast Weather Mode...")
 
+            # Turn off the Precipitation Mode led
+            display.led_off(4)
             # Turn on the Current Temperature Mode led
             display.led_on(5)
             
+            # Get the Mutex to avoid corrupting the weather state
+            theWeather.weatherMutex.acquire()
 
+            # Find the starting hourly forecast
+            hourIconsFound = 0
+            hourIcons = []
+
+            hourlyStartIndex = 0
+            currentTimeEpoch = time.time()
+            for h in theWeather.dailyWeatherData[0].hourly:
+                if h.timeepoc >= currentTimeEpoch:
+                    break
+                hourlyStartIndex += 1
+            if hourlyStartIndex >= 24:
+                for i in range(4):
+                    hourIcons.append(theWeather.dailyWeatherData[1].hourly[i].icon)
+            else:
+                for i in range(4):
+                    index = i + hourlyStartIndex
+                    dayWrap = False
+                    if index > 23:
+                        index = index - 23
+                        dayWrap = True
+                    if dayWrap:
+                        hourIcons.append(theWeather.dailyWeatherData[0].hourly[index].icon)
+                    else:
+                        hourIcons.append(theWeather.dailyWeatherData[1].hourly[index].icon)
+            theWeather.weatherMutex.release()
+
+            display.displayIcons(hourIcons[0], hourIcons[1], hourIcons[2], hourIcons[3])
+
+            if cycleModes:
+                # Cycling mode, so stay in this mode until modeTime expires unless interrupted
+                for i in range(modeTime[mainMode]*10):
+                    if state.interruptAction:
+                        break
+                    time.sleep(0.1)
+
+                if state.interruptAction == False:
+                    if mainMode >= maxMode:
+                        # Return to the mainMode 0 to cycle back through
+                        mainMode = 0
+                    else:
+                        mainMode += 1
+                else:
+                    state.interruptAction = False
+
+        # Display Next Four Days as Icons 
+        elif mainMode == 4:
+            print("Entering Four Day Forecast Weather Mode...")
+
+            # Turn off the Four Hour Mode led
+            display.led_off(5)
+            # Turn on the Four Day Mode led
+            display.led_on(6)
+            
             # Get the Mutex to avoid corrupting the weather state
             theWeather.weatherMutex.acquire()
             icon0 = theWeather.dailyWeatherData[0].icon
@@ -154,38 +302,182 @@ def mainWeatherStationEventLoop():
             theWeather.weatherMutex.release()
 
             display.displayIcons(icon0, icon1, icon2, icon3)
-            print(f"{icon0}, {icon1}, {icon2}, {icon3}")
 
             if cycleModes:
-                time.sleep(modeTime[mainMode])
-                if mainMode == maxMode:
-                    # Return to the mainMode 0 to cycle back through
-                    mainMode = 0
+                # Cycling mode, so stay in this mode until modeTime expires unless interrupted
+                for i in range(modeTime[mainMode]*10):
+                    if state.interruptAction:
+                        break
+                    time.sleep(0.1)
+
+                if state.interruptAction == False:
+                    if mainMode >= maxMode:
+                        # Return to the mainMode 0 to cycle back through
+                        mainMode = 0
+                    else:
+                        mainMode += 1
                 else:
-                    mainMode += 1
-            else:
-                while True:
-                    time.sleep(1)
+                    state.interruptAction = False
                     
+        elif mainMode == 5:
+            print("Entering Rubbish Collection Mode...")
+
+            # Turn off the Four Day Mode led
+            display.led_off(6)
+            # Turn on the Rubbish Mode led
+            display.led_on(7)
+
+            today = datetime.date.today()
+            for r in rubbish.rubbishCollectionCalendar:
+                if datetime.date.fromisoformat(r) >= today:
+                    rubbishKey = r
+                    break
+            rubbishDate = datetime.date.fromisoformat(rubbishKey)
+
+            if rubbishDate.weekday() == 0:
+                display.displayText("Mon")
+            elif rubbishDate.weekday() == 1:
+                display.displayText("Tue")
+            elif rubbishDate.weekday() == 2:
+                display.displayText("Wed")
+            elif rubbishDate.weekday() == 3:
+                display.displayText("Thu")
+            elif rubbishDate.weekday() == 4:
+                display.displayText("Fri")
+            elif rubbishDate.weekday() == 5:
+                display.displayText("Sat")
+            elif rubbishDate.weekday() == 6:
+                display.displayText("Sun")
+            else:
+                pass
+
+            display.set_raw64(ICONS[rubbish.rubbishCollectionCalendar[rubbishKey]], matrix=3)
+
+            if cycleModes:
+                # Cycling mode, so stay in this mode until modeTime expires unless interrupted
+                for i in range(modeTime[mainMode]*10):
+                    if state.interruptAction:
+                        break
+                    time.sleep(0.1)
+
+                if state.interruptAction == False:
+                    if mainMode >= maxMode:
+                        # Return to the mainMode 0 to cycle back through
+                        mainMode = 0
+                    else:
+                        mainMode += 1
+                else:
+                    state.interruptAction = False
+                    
+        # Display Forecast Text
+        elif mainMode == 6:
+            print("Entering Forecast Description Weather Mode...")
+
             # Turn on the Current Temperature Mode led
-            display.led_off(5)
+            display.all_led_off()
+            display.clear_disp()
+
+            forecastString = extractWeatherForecastText(theWeather)
+            
+            print(forecastString)
+            display.scrollText(forecastString, delay=0.01)
+
+            mainMode = oldMainMode
+
+        # Display Sublocation Forecast Text
+        elif mainMode == 7:
+            print("Entering Forecast for Sublocation Mode...")
+
+            # Turn on the Current Temperature Mode led
+            display.all_led_off()
+            display.clear_disp()
+
+            for subLoc in theWeather.subLocations:
+                forecastString = extractWeatherForecastText(theWeather,short=True,subLocationName=subLoc)
+            
+                print(forecastString)
+                display.scrollText(forecastString, delay=0.01)
+
+            mainMode = oldMainMode
 
         time.sleep(0.1)
 
 def termination_clean_up(signum, frame):
+    global theWeather
+
     print("Program has been quit by Ctrl-C. Cleaning Up...")
+    state.interruptAction = True
+    theWeather.stopPollingForWeather()
     display.hw_off()
+    print("Program has been quit by Ctrl-C. Cleaning Up Finished. Goodbye!")
     exit(0)
 
+def button0Pressed():
+    global cycleModes
+    global mainMode
+    global display
+
+    print("Buttons 0 Pressed: In mode=" + str(mainMode), end="")
+    cycleModes = False
+    if mainMode >= maxMode:
+        # Return to the mainMode 0 to cycle back through
+        mainMode = 0
+    else:
+        mainMode += 1
+    print(", going to mode=" + str(mainMode))
+    state.interruptAction = True
+
+def button0Held():
+    global cycleModes
+    global mainMode
+    global display
+
+    print("Buttons 0 Held")
+    cycleModes = True
+    mainMode = 0
+    display.all_led_off()
+    display.clear_disp()
+    state.interruptAction = True
+
+def button1Pressed():
+    global cycleModes
+    global mainMode
+
+    print("Buttons 1 Pressed")
+
+def button2Pressed():
+    global cycleModes
+    global mainMode
+    global oldMainMode
+
+    print("Buttons 2 Pressed")
+    oldMainMode = mainMode
+    mainMode = 6
+    state.interruptAction = True
+
+def button3Pressed():
+    global cycleModes
+    global mainMode
+    global oldMainMode
+
+    print("Buttons 3 Pressed")
+    oldMainMode = mainMode
+    mainMode = 7
+    state.interruptAction = True
+
 if __name__ == "__main__":
+    # Track termination via Ctrl+C so we can clean up
+    signal.signal(signal.SIGINT, termination_clean_up)
+
     # Initialise the HW and get a handle to it
     display = RpiWeatherHW()
 
-    # Initialise the Mode Classes
-    clock = clock.Clock(display)
+    RpiWeatherHW.buttons[0].when_pressed = button0Pressed
+    RpiWeatherHW.buttons[0].when_held = button0Held
 
-    # Track termination via Ctrl+C so we can clean up
-    signal.signal(signal.SIGINT, termination_clean_up)
+    RpiWeatherHW.buttons[1].when_pressed = button1Pressed
+    RpiWeatherHW.buttons[2].when_pressed = button2Pressed
+    RpiWeatherHW.buttons[3].when_pressed = button3Pressed
 
     # Initiate the Weather API to get weather data
     theWeather = VisualCrossing(visual_crossing_apikey.myVisualCrossingAPIKey)
@@ -195,15 +487,17 @@ if __name__ == "__main__":
     theWeather.setPollingPeriod(60)
     theWeather.pollForWeatherWithThread()
 
+    # Initialise the Mode Classes
+    clock = clock.Clock(display)
+    weather = weather_modes.WeatherDisplay(display, theWeather)
+
     # Display Start-Up Behaviour
-    display.threadedScrollText(state.weatherVer + state.weatherCopyright, delay=0.005)
-    time.sleep(1)
-    state.interruptAction = True
-    display.threadedScrollTextWait()
+    display.scrollText(state.weatherVer + state.weatherCopyright, delay=0.005)
 
     # Enter the main state-machine loop for the Weather Station
     mainMode = 0
     mainWeatherStationEventLoop()
+    # Above event loop should never terminate
 
     # Shut down
     signal.raise_signal(signal.SIGINT)

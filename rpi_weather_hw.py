@@ -7,6 +7,7 @@
 
 from time import sleep
 from gpiozero import LED
+from gpiozero import Button
 import board
 import busio
 import threading
@@ -19,6 +20,7 @@ class RpiWeatherHW():
 
     # Hardware interface variables
     leds = [LED(17), LED(27), LED(22), LED(10), LED(9), LED(14), LED(15), LED(18)]
+    buttons = [Button(23, pull_up=False, hold_time=2), Button(24, pull_up=False), Button(25, pull_up=False), Button(8, pull_up=False)]
 
     # State of Clock LEDs - True=On; False=Off
     clock_leds = False
@@ -149,6 +151,8 @@ class RpiWeatherHW():
                 RpiWeatherHW.matrix[matrix][x,0] = pixel_bit
             RpiWeatherHW.matrix[matrix].show()
             sleep(delay)
+            if state.interruptAction:
+                break
 
     def displayText(self, text):
         if len(text) > 4:
@@ -192,8 +196,6 @@ class RpiWeatherHW():
 
             # Check if we should terminate the scrolling
             if state.interruptAction:
-                # Reset the flag so it doesn't interrupt next time
-                state.interruptAction = False
                 return
 
             """ Construct the bitmap """

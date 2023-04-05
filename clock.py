@@ -18,7 +18,6 @@ from led8x8icons import LED8x8ICONS as ICONS
 class Clock():
     
     def __init__(self, display ):
-        state.interruptAction = False
         self.display = display
         self.old_val = 8888
         self.new_val = 9999
@@ -44,6 +43,8 @@ class Clock():
         if new_val == old_val:
             return
         for i in range(3,-1,-1):
+            if state.interruptAction:
+                break
             new_d = new_val % 10
             old_d = old_val % 10
             if i == 0 and new_d == 0:
@@ -103,11 +104,15 @@ class Clock():
         while True:
             # Loop forever, updating every 2 seconds, until interruptHWAction is true.
             if state.interruptAction:
-                state.interruptAction = False
                 break
 
             self.new_val = self.time2int(time.localtime(),True)
             self.update_display(self.new_val, self.old_val, scroll=True, initial=False)
             self.display.clock_led_toggle()
             self.old_val = self.new_val
-            time.sleep(2)
+            # Wait 2 seconds, but checking for interrupts
+            for i in range(20):
+                if state.interruptAction:
+                    break
+                time.sleep(0.1)
+

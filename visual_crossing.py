@@ -15,8 +15,12 @@ import time
 class WeatherData():
     def __init__(self, temp, feelslike, precip, precipprob, snow, snowdepth, preciptype,
             windspeed, windgust, winddir, cloudcover, uvindex, conditions, icon, description="",
-            sunrise="", sunset="", hourly=[]):
+            timestring="", timeepoc=0, sunrise="", sunset="", tempmin=0, tempmax=0, hourly=[]):
+        self.timestring = timestring
+        self.timeepoc = timeepoc
         self.temp = temp
+        self.tempmin = tempmin
+        self.tempmax = tempmax
         self.feelslike = feelslike
         self.precip = precip
         self.precipprob = precipprob
@@ -37,7 +41,11 @@ class WeatherData():
 
     def __str__(self):
         weatherConditionsString = \
+            "Time =      " + str(self.timestring) + "\n" + \
+            "Epoc =      " + str(self.timeepoc) + "\n" + \
             "Temp =      " + str(self.temp) + "\n" + \
+            "Temp Min =  " + str(self.tempmin) + "\n" + \
+            "Temp Max =  " + str(self.tempmax) + "\n" + \
             "Feelslike = " + str(self.feelslike) + "\n" + \
             "Precip =    " + str(self.precip) + "\n" \
             "PrecipProb =" + str(self.precipprob) + "\n" \
@@ -56,6 +64,8 @@ class WeatherData():
             "Sunset =    " + str(self.sunset) + "\n"
         for i, h in enumerate(self.hourly):
             weatherConditionsString = weatherConditionsString + "Hour " + str(i) + ":\n" \
+                "  Time =      " + str(h.timestring) + "\n" + \
+                "  Epoc =      " + str(h.timeepoc) + "\n" + \
                 "  Temp =      " + str(h.temp) + "\n" + \
                 "  Feelslike = " + str(h.feelslike) + "\n" + \
                 "  Precip =    " + str(h.precip) + "\n" \
@@ -131,8 +141,10 @@ class VisualCrossing():
                 currentWeather["uvindex"],
                 currentWeather["conditions"],
                 currentWeather["icon"],
-                currentWeather["sunrise"],
-                currentWeather["sunset"]
+                sunrise = currentWeather["sunrise"],
+                sunset = currentWeather["sunset"],
+                timestring = currentWeather["datetime"],
+                timeepoc = currentWeather["datetimeEpoch"]
                 )
 
         for day in jsonWeather["days"]:
@@ -153,6 +165,8 @@ class VisualCrossing():
                     hour["uvindex"],
                     hour["conditions"],
                     hour["icon"],
+                    timestring = hour["datetime"],
+                    timeepoc = hour["datetimeEpoch"]
                     ))
 
             newDailyWeatherData = WeatherData(
@@ -173,6 +187,10 @@ class VisualCrossing():
                 description = day["description"],
                 sunrise = day["sunrise"],
                 sunset = day["sunset"],
+                timestring = day["datetime"],
+                timeepoc = day["datetimeEpoch"],
+                tempmin = day["tempmin"],
+                tempmax = day["tempmax"],
                 hourly = hourlyWeatherData
                 )
             self.dailyWeatherData.append(newDailyWeatherData)
@@ -220,11 +238,23 @@ class VisualCrossing():
                 self.processSublocationWeatherData(r.json(), name)
 
     def pollForWeather(self):
+        pollingPeriod=0
+
+        # Get first instance of weather data now
+        self.weatherMutex.acquire()
+        self.getWeatherData()
+        self.weatherMutex.release()
+
         while True:
-            self.weatherMutex.acquire()
-            self.getWeatherData()
-            self.weatherMutex.release()
-            time.sleep(self.updateFrequency)
+            # Continue to update the weather based on the set update Frequency
+            if pollingPeriod == self.updateFrequency:
+                pollingPeriod=0
+                self.weatherMutex.acquire()
+                print("Getting Updated Weather Data...")
+                self.getWeatherData()
+                self.weatherMutex.release()
+            pollingPeriod+=1
+            time.sleep(1)
             if self.terminateThread:
                 break
 

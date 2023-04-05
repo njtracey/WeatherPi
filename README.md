@@ -18,6 +18,20 @@ A brief description of the various software components.
 * ```visual_crossing.py``` - interfaces the VisualCrossing Web API to download weather data
 * ```visual_crossing_apikey.py``` - put your VisualCrossing API key here... myVisualCrossingAPIKey=\<Your Key Here\>
 
+# Modes of Operation
+The weather station has various modes, which are indicated by the six red LEDs, numbered from 0 to 5 from top-left, to
+bottom-left, then top-right to bottom-right. The modes are:
+1. Mode 0: Clock - displays the current time
+1. Mode 1: Current Temperature - displays the current temperature at the current location
+1. Mode 2: Rainfull - displays the probability and amount of rain today
+1. Mode 3: Next Four Hours - displays icons for the weather in the next four hours
+1. Mode 4: Next Four Days - displays icons for the weather in the next four days
+1. Mode 5: Bin Recycling - displays the day and type of the next bin recycling
+
+In addition via the buttons its possible to access:
+* A detailed weather forecast in textual form for the rest of the day and the four day forecasting period
+* The weather details for the sub location
+
 # Dependencies
 *  Adafruit Python Library for LED Backpacks
     * https://github.com/adafruit/Adafruit_Python_LED_Backpack
