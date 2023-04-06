@@ -261,6 +261,9 @@ class VisualCrossing():
     def pollForWeather(self):
         pollingPeriod=0
 
+        # Wait 10 seconds on first call to give time for network to be stable
+        time.sleep(10)
+
         # Get first instance of weather data now
         self.weatherMutex.acquire()
         self.getWeatherData()

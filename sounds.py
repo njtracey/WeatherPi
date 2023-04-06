@@ -12,8 +12,8 @@ class SoundPlayer():
     def __init__(self):
         SoundPlayer.instance = vlc.Instance('--aout=alsa')
         SoundPlayer.player = SoundPlayer.instance.media_player_new()
-        SoundPlayer.bbChimes = SoundPlayer.instance.media_new('big_ben_hour.mp3')
-        SoundPlayer.bbHourly = SoundPlayer.instance.media_new('big_ben_chimes.mp3')
+        SoundPlayer.bbChimes = SoundPlayer.instance.media_new('/home/njt/Documents/rpi/rpi-weather/big_ben_hour.mp3')
+        SoundPlayer.bbHourly = SoundPlayer.instance.media_new('/home/njt/Documents/rpi/rpi-weather/big_ben_chimes.mp3')
         SoundPlayer.playSoundThread = None
         SoundPlayer.playTextThread = None
 
@@ -46,7 +46,7 @@ class SoundPlayer():
             return
 
         tts = gtts.gTTS(text=text, lang='en', tld='co.uk')
-        tts.save('tmp.mp3')
+        tts.save('/home/njt/Documents/rpi/rpi-weather/tmp.mp3')
 
         time.sleep(2)
 

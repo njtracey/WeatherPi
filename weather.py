@@ -450,7 +450,7 @@ def mainWeatherStationEventLoop():
             # Toggle sound state
             state.soundsOn = not state.soundsOn
 
-            soundStateString = "Sound : "
+            soundStateString = "Sound:"
             if state.soundsOn:
                 soundStateString = soundStateString + "On    "
             else:
@@ -553,7 +553,7 @@ if __name__ == "__main__":
     theWeather.setLocation("Liverpool", "53.39079,-2.9055259")
     theWeather.addSublocations("York", "53.9270239,-1.0741348")
     theWeather.addSublocations("London", "51.4892971,-0.1132849")
-    theWeather.setPollingPeriod(60)
+    theWeather.setPollingPeriod(120)
     theWeather.pollForWeatherWithThread()
 
     # Initialise the Mode Classes
