@@ -14,6 +14,19 @@ class WeatherDisplay():
         self.weatherData = weatherData
         self.displayWeatherDataThread = None
 
+    def threadedDisplayError(self):
+        # Indicate that we shouldn't interrupt the threaded operation
+        state.interruptAction = False
+        # Create and start the thread to do the current temperature display
+        self.displayWeatherDataThread = threading.Thread(
+                target = self.displayError,
+                args=(),
+                daemon=True)
+        self.displayWeatherDataThread.start()
+
+    def displayError(self):
+        self.display.displayError()
+
     def threadedDisplayTemperature(self):
         # Indicate that we shouldn't interrupt the threaded operation
         state.interruptAction = False

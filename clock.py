@@ -12,13 +12,15 @@ import sys
 import threading
 
 import state
+import sounds
 
 from led8x8icons import LED8x8ICONS as ICONS
 
 class Clock():
     
-    def __init__(self, display ):
+    def __init__(self, display, soundPlayer):
         self.display = display
+        self.soundPlayer = soundPlayer
         self.old_val = 8888
         self.new_val = 9999
         self.displayClockThread = None
@@ -42,6 +44,14 @@ class Clock():
             return
         if new_val == old_val:
             return
+
+        if new_val % 100 == 0:
+            numHours = int (new_val / 100)
+            if numHours >= 9 and numHours <= 23:
+                if numHours > 12:
+                    numHours -= 12
+                self.soundPlayer.threadedPlayBBChimes(numHours)
+
         for i in range(3,-1,-1):
             if state.interruptAction:
                 break

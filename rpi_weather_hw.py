@@ -20,7 +20,7 @@ class RpiWeatherHW():
 
     # Hardware interface variables
     leds = [LED(17), LED(27), LED(22), LED(10), LED(9), LED(14), LED(15), LED(18)]
-    buttons = [Button(23, pull_up=False, hold_time=2), Button(24, pull_up=False), Button(25, pull_up=False), Button(8, pull_up=False)]
+    buttons = [Button(23, pull_up=False, hold_time=2), Button(24, pull_up=False), Button(25, pull_up=False, hold_time=2), Button(8, pull_up=False)]
 
     # State of Clock LEDs - True=On; False=Off
     clock_leds = False
@@ -168,6 +168,10 @@ class RpiWeatherHW():
         self.set_raw64(ICONS[icon1], 1)
         self.set_raw64(ICONS[icon2], 2)
         self.set_raw64(ICONS[icon3], 3)
+        
+    def displayError(self):
+        for i in range(4):
+            self.set_raw64(ICONS['sad'], i)
 
     def interruptDisplayAction(self):
         # Set the flag to indicate that scrolling should be interrupted

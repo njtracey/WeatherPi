@@ -109,6 +109,8 @@ class VisualCrossing():
         self.terminateThread = False
         self.weatherThread = None
         self.weatherMutex = threading.Lock()
+        self.weatherDataAccessError = False
+        self.weatherDataAvailable = False
 
     def setLocation(self, name, location):
         self.locationName = name
@@ -218,15 +220,24 @@ class VisualCrossing():
                 )
 
     def getWeatherData(self):
-        REQUEST_URL = VisualCrossing.BASE_URL
+        self.weatherDataAccessError = False
 
+        REQUEST_URL = VisualCrossing.BASE_URL
         REQUEST = VisualCrossing.REQUEST_DETAILS1 + self.locationLatLong + VisualCrossing.REQUEST_DETAILS2 + self.apikey + VisualCrossing.REQUEST_DETAILS3
+
         try:
             r = requests.get(REQUEST_URL + REQUEST)
         except:
             print("Error   " + REQUEST)
+            self.weatherDataAccessError = True
+            self.weatherDataAvailable = False
         else:
-            self.processWeatherData(r.json())
+            try:
+                self.processWeatherData(r.json())
+            except:
+                print("Error processing Weather Data")
+                self.weatherDataAccessError = True
+                self.weatherDataAvailable = False
 
         for name, latlong in self.subLocations.items():
             REQUEST = VisualCrossing.REQUEST_DETAILS1 + latlong + VisualCrossing.REQUEST_DETAILS4 + self.apikey + VisualCrossing.REQUEST_DETAILS3
@@ -234,8 +245,18 @@ class VisualCrossing():
                 r = requests.get(REQUEST_URL + REQUEST)
             except:
                 print("Error   " + REQUEST)
+                self.weatherDataAccessError = True
+                self.weatherDataAvailable = False
             else:
-                self.processSublocationWeatherData(r.json(), name)
+                try:
+                    self.processSublocationWeatherData(r.json(), name)
+                except:
+                    print("Error processing Sublocation Weather Data")
+                    self.weatherDataAccessError = True
+                    self.weatherDataAvailable = False
+
+        if self.weatherDataAccessError == False:
+                self.weatherDataAvailable = True
 
     def pollForWeather(self):
         pollingPeriod=0
@@ -250,7 +271,6 @@ class VisualCrossing():
             if pollingPeriod == self.updateFrequency:
                 pollingPeriod=0
                 self.weatherMutex.acquire()
-                print("Getting Updated Weather Data...")
                 self.getWeatherData()
                 self.weatherMutex.release()
             pollingPeriod+=1
