@@ -41,12 +41,11 @@ In addition via the buttons its possible to access:
 # Dependencies
 *  Adafruit Python Library for LED Backpacks
     * https://github.com/adafruit/Adafruit_Python_LED_Backpack
-
-# Install
-Simply clone this repo and run:
-```
-$ git clone https://github.com/njtracey
-$ cd rpi-weather
-$ sudo python 
-```
+*  python-vlc: Play back mp3 file
+    * sudo apt-get install vlc
+    * sudo pip install python-vlc
+* gTTS: Google text to speech interface
+    * sudo pip install gTTS
+* gpiozero: HW interface to Raspberry Pi GPIO
+    * Already installed in Raspbian
 
