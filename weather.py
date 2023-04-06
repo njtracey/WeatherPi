@@ -61,17 +61,20 @@ def extractWeatherForecastText(theWeather,short=False,subLocationName=""):
             " and the low will be " + str(todayTempMin) + "£."
         forecastString = forecastString + " There is a " + str(todayPrecipProb) + "% chance of"
         precipTypeNum = 0
-        for p in todayPrecipType:
-            if p == 'rain':
-                if precipTypeNum != 0:
-                    forecastString = forecastString + " &"
-                    forecastString = forecastString + " rain"
-                    precipTypeNum += 1
-            if p == 'snow':
-                if precipTypeNum != 0:
-                    forecastString = forecastString + " &"
-                    forecastString = forecastString + " snow"
-                    precipTypeNum += 1
+        try:
+            for p in todayPrecipType:
+                if p == 'rain':
+                    if precipTypeNum != 0:
+                        forecastString = forecastString + " &"
+                        forecastString = forecastString + " rain"
+                        precipTypeNum += 1
+                if p == 'snow':
+                    if precipTypeNum != 0:
+                        forecastString = forecastString + " &"
+                        forecastString = forecastString + " snow"
+                        precipTypeNum += 1
+        except:
+            pass
 
         if precipTypeNum == 0:
             forecastString = forecastString + " rain"
@@ -537,17 +540,6 @@ if __name__ == "__main__":
     # Track termination via Ctrl+C so we can clean up
     signal.signal(signal.SIGINT, termination_clean_up)
 
-    # Initialise the HW and get a handle to it
-    display = RpiWeatherHW()
-
-    # Configure the button interrupts and map them to their function calls
-    RpiWeatherHW.buttons[0].when_pressed = button0Pressed
-    RpiWeatherHW.buttons[0].when_held = button0Held
-    RpiWeatherHW.buttons[1].when_pressed = button1Pressed
-    RpiWeatherHW.buttons[2].when_pressed = button2Pressed
-    RpiWeatherHW.buttons[2].when_held = button2Held
-    RpiWeatherHW.buttons[3].when_pressed = button3Pressed
-
     # Initiate the Weather API to get weather data
     theWeather = VisualCrossing(visual_crossing_apikey.myVisualCrossingAPIKey)
     theWeather.setLocation("Liverpool", "53.39079,-2.9055259")
@@ -556,10 +548,21 @@ if __name__ == "__main__":
     theWeather.setPollingPeriod(120)
     theWeather.pollForWeatherWithThread()
 
+    # Initialise the HW and get a handle to it
+    display = RpiWeatherHW()
+
     # Initialise the Mode Classes
     soundPlayer = sounds.SoundPlayer()
     clock = clock.Clock(display, soundPlayer)
     weather = weather_modes.WeatherDisplay(display, theWeather)
+
+    # Configure the button interrupts and map them to their function calls
+    RpiWeatherHW.buttons[0].when_pressed = button0Pressed
+    RpiWeatherHW.buttons[0].when_held = button0Held
+    RpiWeatherHW.buttons[1].when_pressed = button1Pressed
+    RpiWeatherHW.buttons[2].when_pressed = button2Pressed
+    RpiWeatherHW.buttons[2].when_held = button2Held
+    RpiWeatherHW.buttons[3].when_pressed = button3Pressed
 
     # Display Start-Up Behaviour
     display.scrollText(state.weatherVer + state.weatherCopyright, delay=0.005)

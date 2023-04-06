@@ -111,11 +111,14 @@ class WeatherDisplay():
 
             rain = False
             snow = False
-            for p in precipType:
-                if p == "rain":
-                    rain = True
-                if p == 'snow':
-                    snow = True
+            try:
+                for p in precipType:
+                    if p == "rain":
+                        rain = True
+                    if p == 'snow':
+                        snow = True
+            except:
+                pass
 
             self.display.clear_disp()
 

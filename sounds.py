@@ -89,6 +89,7 @@ class SoundPlayer():
 
 # Main for testing
 if __name__ == "__main__":
+    state.soundsOn = True
     soundPlayer = SoundPlayer()
 
     soundPlayer.playText("Hello World")
