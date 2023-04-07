@@ -80,8 +80,11 @@ def extractWeatherForecastText(theWeather,short=False,subLocationName=""):
         if precipTypeNum == 0:
             forecastString = forecastString + " rain"
 
-        forecastString = forecastString + " with a depth of " + str(todayPrecip) + "mm."
-        forecastString = forecastString + "    "
+        if topdayPrecipProb == 0 or todayPrecip < 0.1\:
+            forecastString = forecastString ".    "
+        else:
+            forecastString = forecastString + " with a depth of " + str(todayPrecip) + "mm."
+            forecastString = forecastString + "    "
 
     return forecastString
 
