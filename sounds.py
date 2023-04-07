@@ -14,6 +14,7 @@ class SoundPlayer():
         SoundPlayer.player = SoundPlayer.instance.media_player_new()
         SoundPlayer.bbChimes = SoundPlayer.instance.media_new('/home/njt/Documents/rpi/rpi-weather/big_ben_hour.mp3')
         SoundPlayer.bbHourly = SoundPlayer.instance.media_new('/home/njt/Documents/rpi/rpi-weather/big_ben_chimes.mp3')
+        SoundPlayer.player.audio_set_volume(100)
         SoundPlayer.playSoundThread = None
         SoundPlayer.playTextThread = None
 
