@@ -56,7 +56,7 @@ class SoundPlayer():
         if state.soundsOn == False:
             return
 
-        ttsMedia = SoundPlayer.instance.media_new('tmp.mp3')
+        ttsMedia = SoundPlayer.instance.media_new('/home/njt/Documents/rpi/rpi-weather/tmp.mp3')
         SoundPlayer.player.set_media(ttsMedia)
         SoundPlayer.player.set_position(0.0)
         SoundPlayer.player.play()

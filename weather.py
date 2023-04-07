@@ -4,6 +4,7 @@
 import time
 import signal
 import datetime
+import os
 
 # Project Imports
 import state
@@ -536,6 +537,17 @@ def button3Pressed():
     mainMode = 7
     state.interruptAction = True
 
+def button3Held():
+    global display
+
+    state.interruptAction = True
+
+    time.sleep(1)
+
+    print("Initiating Shutdown...")
+    display.displayIcons('X','X','X','sad')
+    os.system("sudo shutdown now -h")
+
 if __name__ == "__main__":
     # Track termination via Ctrl+C so we can clean up
     signal.signal(signal.SIGINT, termination_clean_up)
@@ -563,6 +575,7 @@ if __name__ == "__main__":
     RpiWeatherHW.buttons[2].when_pressed = button2Pressed
     RpiWeatherHW.buttons[2].when_held = button2Held
     RpiWeatherHW.buttons[3].when_pressed = button3Pressed
+    RpiWeatherHW.buttons[3].when_held = button3Held
 
     # Display Start-Up Behaviour
     display.scrollText(state.weatherVer + state.weatherCopyright, delay=0.005)

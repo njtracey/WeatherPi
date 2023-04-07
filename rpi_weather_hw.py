@@ -20,7 +20,7 @@ class RpiWeatherHW():
 
     # Hardware interface variables
     leds = [LED(17), LED(27), LED(22), LED(10), LED(9), LED(14), LED(15), LED(18)]
-    buttons = [Button(23, pull_up=False, hold_time=2), Button(24, pull_up=False), Button(25, pull_up=False, hold_time=2), Button(8, pull_up=False)]
+    buttons = [Button(23, pull_up=False, hold_time=2), Button(24, pull_up=False), Button(25, pull_up=False, hold_time=2), Button(8, pull_up=False, hold_time=5)]
 
     # State of Clock LEDs - True=On; False=Off
     clock_leds = False
